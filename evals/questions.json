@@ -1,0 +1,126 @@
+[
+  {
+    "id": "track_count",
+    "difficulty": "easy",
+    "question": "How many tracks are there?",
+    "reference_sql": "SELECT COUNT(*) AS track_count FROM track;",
+    "expected": {
+      "columns": ["track_count"],
+      "rows": [[3503]]
+    }
+  },
+  {
+    "id": "customer_count",
+    "difficulty": "easy",
+    "question": "How many customers are there?",
+    "reference_sql": "SELECT COUNT(*) AS customer_count FROM customer;",
+    "expected": {
+      "columns": ["customer_count"],
+      "rows": [[59]]
+    }
+  },
+  {
+    "id": "top_artists_by_album_count",
+    "difficulty": "medium",
+    "question": "Which five artists have the most albums?",
+    "reference_sql": "SELECT ar.name AS artist_name, COUNT(al.album_id) AS album_count FROM artist ar JOIN album al ON al.artist_id = ar.artist_id GROUP BY ar.artist_id, ar.name ORDER BY album_count DESC, artist_name ASC LIMIT 5;",
+    "expected": {
+      "columns": ["artist_name", "album_count"],
+      "rows": [
+        ["Iron Maiden", 21],
+        ["Led Zeppelin", 14],
+        ["Deep Purple", 11],
+        ["Metallica", 10],
+        ["U2", 10]
+      ]
+    }
+  },
+  {
+    "id": "top_customers_by_spend",
+    "difficulty": "medium",
+    "question": "Which five customers have spent the most?",
+    "reference_sql": "SELECT c.first_name || ' ' || c.last_name AS customer_name, SUM(i.total) AS total_spend FROM customer c JOIN invoice i ON i.customer_id = c.customer_id GROUP BY c.customer_id, c.first_name, c.last_name ORDER BY total_spend DESC, customer_name ASC LIMIT 5;",
+    "expected": {
+      "columns": ["customer_name", "total_spend"],
+      "rows": [
+        ["Helena Holý", 49.62],
+        ["Richard Cunningham", 47.62],
+        ["Luis Rojas", 46.62],
+        ["Hugh O'Reilly", 45.62],
+        ["Ladislav Kovács", 45.62]
+      ]
+    }
+  },
+  {
+    "id": "top_country_by_revenue",
+    "difficulty": "medium",
+    "question": "Which country generated the most revenue?",
+    "reference_sql": "SELECT billing_country AS country, SUM(total) AS total_revenue FROM invoice GROUP BY billing_country ORDER BY total_revenue DESC, country ASC LIMIT 1;",
+    "expected": {
+      "columns": ["country", "total_revenue"],
+      "rows": [["USA", 523.06]]
+    }
+  },
+  {
+    "id": "top_genre_by_tracks_sold",
+    "difficulty": "hard",
+    "question": "Which genre has sold the most tracks?",
+    "reference_sql": "SELECT g.name AS genre_name, SUM(il.quantity) AS tracks_sold FROM genre g JOIN track t ON t.genre_id = g.genre_id JOIN invoice_line il ON il.track_id = t.track_id GROUP BY g.genre_id, g.name ORDER BY tracks_sold DESC, genre_name ASC LIMIT 1;",
+    "expected": {
+      "columns": ["genre_name", "tracks_sold"],
+      "rows": [["Rock", 835]]
+    }
+  },
+  {
+    "id": "revenue_by_year",
+    "difficulty": "medium",
+    "question": "What was the total revenue by year?",
+    "reference_sql": "SELECT EXTRACT(YEAR FROM invoice_date)::integer AS year, SUM(total) AS total_revenue FROM invoice GROUP BY year ORDER BY year;",
+    "expected": {
+      "columns": ["year", "total_revenue"],
+      "rows": [
+        [2021, 449.46],
+        [2022, 481.45],
+        [2023, 469.58],
+        [2024, 477.53],
+        [2025, 450.58]
+      ]
+    }
+  },
+  {
+    "id": "employee_with_most_customers",
+    "difficulty": "medium",
+    "question": "Which employee supports the most customers?",
+    "reference_sql": "SELECT e.first_name || ' ' || e.last_name AS employee_name, COUNT(c.customer_id) AS customer_count FROM employee e JOIN customer c ON c.support_rep_id = e.employee_id GROUP BY e.employee_id, e.first_name, e.last_name ORDER BY customer_count DESC, employee_name ASC LIMIT 1;",
+    "expected": {
+      "columns": ["employee_name", "customer_count"],
+      "rows": [["Jane Peacock", 21]]
+    }
+  },
+  {
+    "id": "longest_track_and_artist",
+    "difficulty": "medium",
+    "question": "What is the longest track and who is its artist?",
+    "reference_sql": "SELECT t.name AS track_name, ar.name AS artist_name, t.milliseconds FROM track t JOIN album al ON al.album_id = t.album_id JOIN artist ar ON ar.artist_id = al.artist_id ORDER BY t.milliseconds DESC, t.track_id ASC LIMIT 1;",
+    "expected": {
+      "columns": ["track_name", "artist_name", "milliseconds"],
+      "rows": [["Occupation / Precipice", "Battlestar Galactica", 5286953]]
+    }
+  },
+  {
+    "id": "top_artists_by_sales",
+    "difficulty": "hard",
+    "question": "Which five artists generated the most sales?",
+    "reference_sql": "SELECT ar.name AS artist_name, SUM(il.unit_price * il.quantity) AS total_sales FROM artist ar JOIN album al ON al.artist_id = ar.artist_id JOIN track t ON t.album_id = al.album_id JOIN invoice_line il ON il.track_id = t.track_id GROUP BY ar.artist_id, ar.name ORDER BY total_sales DESC, artist_name ASC LIMIT 5;",
+    "expected": {
+      "columns": ["artist_name", "total_sales"],
+      "rows": [
+        ["Iron Maiden", 138.60],
+        ["U2", 105.93],
+        ["Metallica", 90.09],
+        ["Led Zeppelin", 86.13],
+        ["Lost", 81.59]
+      ]
+    }
+  }
+]
