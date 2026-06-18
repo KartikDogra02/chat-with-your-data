@@ -1,0 +1,32 @@
+[project]
+name = "backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Kartik Dogra", email = "kartikdogra2@gmail.com" }
+]
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi>=0.137.2",
+    "psycopg>=3.3.4",
+    "pydantic-settings>=2.14.1",
+    "sqlalchemy>=2.0.51",
+    "uvicorn>=0.49.0",
+]
+
+[project.scripts]
+chat-with-your-data = "chat_with_your_data.main:main"
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pyright>=1.1.410",
+    "pytest>=9.1.0",
+    "pytest-asyncio>=1.4.0",
+    "ruff>=0.15.17",
+]
