@@ -11,6 +11,30 @@ From the repository root:
 ```bash
 cd backend
 uv sync
+cp .env.example .env
+```
+
+The default environment file connects to the local PostgreSQL container defined in
+`../docker-compose.yml`.
+
+## Verify the database connection
+
+Start PostgreSQL from the repository root:
+
+```bash
+docker compose up -d
+```
+
+Then, from the `backend` directory:
+
+```bash
+uv run python -m backend.db
+```
+
+The expected output is:
+
+```text
+Track count: 3503
 ```
 
 ## Run the development server
