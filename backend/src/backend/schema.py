@@ -103,19 +103,25 @@ def get_schema(schema_name: str = "public") -> list[Table]:
     return list(tables.values())
 
 
-def main() -> None:
-    for table in get_schema():
-        print(f"{table.name}")
+def format_schema(tables: list[Table]) -> str:
+    lines: list[str] = []
+    for table in tables:
+        lines.append(f"{table.name}")
         for column in table.columns:
             nullable = "NULL" if column.nullable else "NOT NULL"
-            print(f"  {column.name}: {column.data_type} {nullable}")
+            lines.append(f"  {column.name}: {column.data_type} {nullable}")
         if table.primary_keys:
-            print(f"  primary key: {', '.join(table.primary_keys)}")
+            lines.append(f"  primary key: {', '.join(table.primary_keys)}")
         for foreign_key in table.foreign_keys:
-            print(
+            lines.append(
                 f"  foreign key: {foreign_key.column} -> "
                 f"{foreign_key.references_table}.{foreign_key.references_column}"
             )
+    return "\n".join(lines)
+
+
+def main() -> None:
+    print(format_schema(get_schema()))
 
 
 if __name__ == "__main__":
