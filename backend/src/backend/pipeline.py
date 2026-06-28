@@ -3,15 +3,23 @@ import sys
 from backend.schema import get_schema, format_schema
 from backend.sql_generator import generate_sql
 from backend.query_executor import execute_query
+from backend.answer_generator import generate_answer
 
 
 def answer_question(question: str):
     schema = format_schema(get_schema())
     sql = generate_sql(question=question, schema=schema)
     result = execute_query(sql)
+    answer = generate_answer(
+        question=question,
+        sql=sql,
+        columns=result.columns,
+        rows=result.rows,
+    )
 
     return {
         "question": question,
+        "answer": answer,
         "sql": sql,
         "columns": result.columns,
         "rows": result.rows,
@@ -30,6 +38,9 @@ def main() -> None:
 
     print("Question:")
     print(answer["question"])
+
+    print("\nAnswer:")
+    print(answer["answer"])
 
     print("\nSQL:")
     print(answer["sql"])

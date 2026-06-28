@@ -28,6 +28,7 @@ class QuestionRequest(BaseModel):
 
 class AnswerResponse(BaseModel):
     question: str
+    answer: str
     sql: str
     columns: list[str]
     rows: list[list[Any]]
@@ -39,6 +40,7 @@ def ask(request: QuestionRequest) -> AnswerResponse:
 
     return AnswerResponse(
         question=answer["question"],
+        answer=answer["answer"],
         sql=answer["sql"],
         columns=answer["columns"],
         rows=answer["rows"],
