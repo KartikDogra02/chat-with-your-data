@@ -61,7 +61,7 @@ the LLM API from a script.
   returning `{answer, sql, rows}`. Test it with curl / the FastAPI docs UI.
   - Current endpoint returns `{question, sql, columns, rows}`. Plain-English `answer` is
     still pending.
-- [ ] **Day 5 — Minimal Vue front-end.** An input box, a "Ask" button, and a results area
+- [x] **Day 5 — Minimal Vue front-end.** An input box, a "Ask" button, and a results area
   that shows the answer, the generated SQL, and a table of rows. Wire it to `/ask`.
 
 **End of Week 1 you have a full-stack app that works on the happy path.** Commit and
