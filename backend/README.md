@@ -59,3 +59,11 @@ uv run pytest
 uv run ruff check .
 uv run pyright
 ```
+
+## Curl Example
+
+```bash
+curl -X POST http://localhost:8000/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Which five artists generated the most sales?"}'
+```
