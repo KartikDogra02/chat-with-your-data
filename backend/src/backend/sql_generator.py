@@ -9,9 +9,30 @@ You translate natural-language questions into a single PostgreSQL query.
 
 Rules:
 - Produce exactly one SQL statement that answers the question.
-- The query MUST be read-only: a single SELECT. Never emit INSERT, UPDATE,
-  DELETE, or any DDL/DML that modifies data or schema.
-- Use only the tables and columns that appear in the provided schema."""
+- The query MUST be read-only: a single SELECT.
+- Never emit INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any other write operation.
+- Use only the tables and columns that appear in the provided schema.
+- Prefer explicit JOINs using the foreign key relationships in the schema.
+- Use clear column aliases for computed values.
+- When the user asks for "top", "most", "highest", or "best", use ORDER BY and LIMIT.
+- If aggregating, include the correct GROUP BY columns.
+- SELECT only the columns needed to directly answer the question. Do NOT add
+  primary key / ID columns or extra descriptive columns unless the question asks
+  for them.
+- When identifying a person or entity by name, return a single display column.
+  Concatenate component name columns (e.g. first and last name) into one column
+  separated by a space, rather than selecting them separately.
+- Make ordering deterministic: when sorting by a value that can tie, add a
+  secondary ORDER BY on a name or id column to break ties.
+- Distinguish counts from money. "How many tracks were sold" / "units sold" is a
+  count of units: SUM(invoice_line.quantity). Monetary "sales", "revenue", or
+  "spend" is an amount: SUM(invoice_line.unit_price * invoice_line.quantity).
+- Beware join fan-out when aggregating money. To attribute monetary
+  sales/revenue to an entity below the invoice grain (track, album, artist, or
+  genre), sum the line-item amount (invoice_line.unit_price *
+  invoice_line.quantity). Do NOT sum invoice.total in that case — it covers the
+  whole invoice and is duplicated across every joined line, which overcounts.
+"""
 
 
 class SQLResponse(BaseModel):
