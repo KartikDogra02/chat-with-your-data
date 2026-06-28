@@ -35,6 +35,10 @@ Rules:
 """
 
 
+class SQLGenerationError(RuntimeError):
+    """Raised when the model fails to produce a usable SQL response."""
+
+
 class SQLResponse(BaseModel):
     sql: str = Field(description="The read-only PostgreSQL SELECT query.")
 
@@ -59,7 +63,7 @@ def generate_sql(question: str, schema: str) -> str:
     )
 
     if response.output_parsed is None:
-        raise RuntimeError("The model did not return a structured SQL response.")
+        raise SQLGenerationError("The model did not return a structured SQL response.")
 
     return response.output_parsed.sql
 
