@@ -1,6 +1,5 @@
 import json
 from decimal import Decimal
-from numbers import Number
 from pathlib import Path
 from typing import Any
 
@@ -21,7 +20,7 @@ def _normalize(value: Any) -> Any:
     """
     if isinstance(value, bool):
         return value
-    if isinstance(value, (Decimal, Number)):
+    if isinstance(value, int | float | Decimal):
         return float(value)
     return value
 

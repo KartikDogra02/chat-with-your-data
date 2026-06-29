@@ -83,9 +83,11 @@ real AI-engineering learning is.
   defined `run_sql` *tool* rather than you scraping SQL out of free text. This is the
   single most important concept to learn — it's how real AI products work, and great
   interview material.
-- [ ] **Day 3 — Self-correction loop.** When a query errors, catch it, send the error back to
+- [x] **Day 3 — Self-correction loop.** When a query errors, catch it, send the error back to
   the model, and let it retry (cap retries so it can't loop forever). Watching it fix its
   own SQL is the moment the project gets genuinely impressive.
+  - Done: `pipeline.answer_question` makes one correction attempt, feeding the failed SQL
+    and database error back to the model through `fix_sql`.
 - [x] **Day 4 — Safety + guardrails.** Enforce that generated queries are read-only (reject
   anything that isn't a SELECT; use a read-only DB user). Add a row limit. This shows you
   think about what happens when the model misbehaves — a mature signal.

@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from backend.pipeline import answer_question
+from backend.query_executor import QueryExecutionError
 from backend.sql_generator import SQLGenerationError
 from backend.sql_validator import UnsafeSQLError
 
@@ -31,8 +32,10 @@ def main() -> None:
         reload=True,
     )
 
+
 class QuestionRequest(BaseModel):
     question: str
+
 
 class AnswerResponse(BaseModel):
     question: str
@@ -40,6 +43,8 @@ class AnswerResponse(BaseModel):
     sql: str
     columns: list[str]
     rows: list[list[Any]]
+    attempts: int
+    corrected: bool
 
 
 @app.post("/ask", response_model=AnswerResponse)
@@ -52,6 +57,8 @@ def ask(request: QuestionRequest) -> AnswerResponse:
         sql=answer["sql"],
         columns=answer["columns"],
         rows=answer["rows"],
+        attempts=answer["attempts"],
+        corrected=answer["corrected"],
     )
 
 
@@ -79,12 +86,20 @@ def handle_openai_error(request: Request, error: openai.OpenAIError) -> JSONResp
     )
 
 
-@app.exception_handler(psycopg.errors.QueryCanceled)
-def handle_query_timeout(
-    request: Request, error: psycopg.errors.QueryCanceled
+@app.exception_handler(QueryExecutionError)
+def handle_query_execution_error(
+    request: Request, error: QueryExecutionError
 ) -> JSONResponse:
+    if isinstance(error.original_error, psycopg.errors.QueryCanceled):
+        return _error(
+            504,
+            "The query took too long to run and was canceled. Try a narrower question.",
+        )
+
+    logger.info("Query failed even after a correction attempt: %s", error)
     return _error(
-        504, "The query took too long to run and was canceled. Try a narrower question."
+        400,
+        "The generated query could not be run against the database. Try rephrasing your question.",
     )
 
 
@@ -94,14 +109,6 @@ def handle_db_unavailable(
 ) -> JSONResponse:
     logger.exception("Database connection failed", exc_info=error)
     return _error(503, "The database is currently unavailable. Please try again shortly.")
-
-
-@app.exception_handler(psycopg.Error)
-def handle_db_error(request: Request, error: psycopg.Error) -> JSONResponse:
-    return _error(
-        400,
-        "The generated query could not be run against the database. Try rephrasing your question.",
-    )
 
 
 @app.exception_handler(Exception)
