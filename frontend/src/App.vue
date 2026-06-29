@@ -1,5 +1,17 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { Bar } from 'vue-chartjs'
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+} from 'chart.js'
+
+ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 
 const EXAMPLE_QUESTIONS = [
   'How many tracks are there?',
@@ -13,6 +25,41 @@ const question = ref('')
 const result = ref(null)
 const error = ref('')
 const loading = ref(false)
+
+function isNumeric(value) {
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (typeof value === 'string' && value.trim() !== '') return Number.isFinite(Number(value))
+  return false
+}
+
+// Chartable: exactly one category column and one numeric value column.
+const chartData = computed(() => {
+  if (!result.value) return null
+  const { columns, rows } = result.value
+  if (columns.length !== 2 || !rows.length) return null
+  if (!rows.every((row) => isNumeric(row[1]))) return null
+
+  const accent = getComputedStyle(document.documentElement)
+    .getPropertyValue('--accent')
+    .trim()
+
+  return {
+    labels: rows.map((row) => String(row[0])),
+    datasets: [
+      {
+        label: columns[1],
+        data: rows.map((row) => Number(row[1])),
+        backgroundColor: accent || '#aa3bff',
+      },
+    ],
+  }
+})
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+}
 
 async function ask() {
   if (!question.value.trim() || loading.value) return
@@ -103,6 +150,9 @@ function askExample(example) {
 
       <div class="block">
         <h2>Results</h2>
+        <div v-if="chartData" class="chart-wrap">
+          <Bar :data="chartData" :options="chartOptions" />
+        </div>
         <div v-if="result.rows.length" class="table-wrap">
           <table>
             <thead>
@@ -290,6 +340,14 @@ pre {
   border-radius: 6px;
   background: var(--code-bg);
   overflow-x: auto;
+}
+
+.chart-wrap {
+  height: 280px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
 }
 
 .table-wrap {
