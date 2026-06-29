@@ -43,6 +43,22 @@ class SQLResponse(BaseModel):
     sql: str = Field(description="The read-only PostgreSQL SELECT query.")
 
 
+FIX_SYSTEM_PROMPT = """\
+You repair a PostgreSQL query that failed to execute.
+
+You are given the user's original question, the database schema, the SQL
+that was attempted, and the database error it raised. Return one corrected
+query that answers the question without raising that error.
+
+Rules:
+- Return exactly one SQL statement.
+- It must be read-only: a single SELECT. Never emit INSERT, UPDATE, DELETE,
+  DROP, ALTER, CREATE, or any other write operation.
+- Use only the tables and columns that appear in the provided schema.
+- Prefer changing as little as needed to fix the error.
+"""
+
+
 def generate_sql(question: str, schema: str) -> str:
     settings = get_settings()
     client = OpenAI(api_key=settings.openai_api_key or None)
@@ -53,12 +69,35 @@ def generate_sql(question: str, schema: str) -> str:
         input=[
             {
                 "role": "user",
-                "content": (
-                    f"PostgreSQL schema:\n{schema}\n\n"
-                    f"Question: {question}"
-                ),
+                "content": f"PostgreSQL schema:\n{schema}\n\nQuestion: {question}",
             }
         ],
+        text_format=SQLResponse,
+    )
+
+    if response.output_parsed is None:
+        raise SQLGenerationError("The model did not return a structured SQL response.")
+
+    return response.output_parsed.sql
+
+
+def fix_sql(question: str, schema: str, bad_sql: str, error_message: str) -> str:
+    settings = get_settings()
+    client = OpenAI(api_key=settings.openai_api_key or None)
+
+    content = (
+        f"The previous SQL failed.\n\n"
+        f"Question:\n{question}\n\n"
+        f"Schema:\n{schema}\n\n"
+        f"Failed SQL:\n{bad_sql}\n\n"
+        f"Database error:\n{error_message}\n\n"
+        f"Return one corrected PostgreSQL SELECT query."
+    )
+
+    response = client.responses.parse(
+        model=settings.openai_model,
+        instructions=FIX_SYSTEM_PROMPT,
+        input=[{"role": "user", "content": content}],
         text_format=SQLResponse,
     )
 
