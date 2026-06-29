@@ -93,9 +93,12 @@ real AI-engineering learning is.
   think about what happens when the model misbehaves — a mature signal.
   - Done with SQL validation, a read-only database user, read-only transactions,
     statement timeouts, and automatic row limiting.
-- [ ] **Day 5 — Charts.** When a result is chartable (e.g. a category and a number), have the
+- [x] **Day 5 — Charts.** When a result is chartable (e.g. a category and a number), have the
   app render a bar/line chart instead of just a table. Decide chart-or-table either with
   a simple rule or by asking the model.
+  - Done: frontend infers chartability from the existing `/ask` response (exactly 2
+    columns, value column numeric) and renders a Chart.js bar chart above the table,
+    which stays visible underneath.
 
 **End of Week 2:** it handles bad questions gracefully, can't damage the database, and
 visualizes results. Commit often.
