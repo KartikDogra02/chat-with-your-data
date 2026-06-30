@@ -4,9 +4,11 @@ from typing import Any
 import openai
 import psycopg
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from backend.config import get_settings
 from backend.pipeline import answer_question
 from backend.query_executor import QueryExecutionError
 from backend.sql_generator import SQLGenerationError
@@ -15,6 +17,13 @@ from backend.sql_validator import UnsafeSQLError
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Chat With Your Data")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().cors_origin_list,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+)
 
 
 @app.get("/health")

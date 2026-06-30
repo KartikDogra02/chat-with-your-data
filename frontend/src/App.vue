@@ -21,6 +21,8 @@ const EXAMPLE_QUESTIONS = [
   'Which genre sold the most tracks?',
 ]
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? ''
+
 const question = ref('')
 const result = ref(null)
 const error = ref('')
@@ -69,7 +71,7 @@ async function ask() {
   result.value = null
 
   try {
-    const response = await fetch('/ask', {
+    const response = await fetch(`${API_BASE_URL}/ask`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ question: question.value.trim() }),

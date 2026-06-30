@@ -52,6 +52,12 @@ npm run build
 npm run preview
 ```
 
-The production build does not proxy API requests, so the backend must be
-reachable at the same origin (or you need to set the API base URL) when
-serving the built app.
+The production build does not proxy API requests. If the backend is deployed
+at a different origin than the frontend, set `VITE_API_BASE_URL` (see
+[`.env.example`](.env.example)) before building:
+
+```bash
+cp .env.example .env
+# edit .env, then:
+npm run build
+```
