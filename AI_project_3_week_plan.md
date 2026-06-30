@@ -122,9 +122,14 @@ done well.
   need to be beautiful, just not broken-looking.
 - [ ] **Day 3 — Dockerise + deploy.** Containerise the stack, push to Render/Railway/Fly. Get
   a public URL. Seed it with the sample data so anyone can try it immediately.
-- [ ] **Day 4 — README (this matters as much as the code).** What it is, a demo GIF, how it
+  - Prep done: `render.yaml` blueprint provisions the DB + backend + frontend on Render.
+    Still needs an actual Render account/deploy to get the public URL.
+- [x] **Day 4 — README (this matters as much as the code).** What it is, a demo GIF, how it
   works (a small architecture diagram), the stack, your eval results, and an honest
   "limitations / what I'd do next" section. Link the live demo at the top.
+  - Done: root `README.md` covers what it is, how it works, safety guardrails, the
+    self-correction loop, eval results, limitations, and what's next. Live demo link is a
+    placeholder until Day 3's actual deploy happens.
 - [ ] **Day 5 — Hook it into your search.** Add the repo + live link to your GitHub profile
   and your CV, and replace the `[TO BUILD]` placeholder with the real details.
 
