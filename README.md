@@ -56,12 +56,18 @@ FastAPI backend as a web service, and the Vue app as a static site.
 3. Render reads `render.yaml` and creates the database + both services.
 4. Set the `OPENAI_API_KEY` secret on the backend service when prompted (it's
    intentionally left out of `render.yaml`).
-5. Seed the database once, against the `DATABASE_URL` Render gives you:
+5. Seed the database using `database/seed.sql` (not `chinook.sql` — that
+   file starts with `DROP DATABASE / CREATE DATABASE / \c chinook` which
+   Render's managed Postgres user cannot run):
    ```bash
-   psql "$DATABASE_URL" -f database/init/chinook.sql
+   psql "$DATABASE_URL" -f database/seed.sql
    psql "$DATABASE_URL" -f database/init/zz-read-only-sql-user.sql
    ```
-6. Once both services are live, update the live demo link at the top of this
+6. After seeding, override the backend's `DATABASE_URL` in Render's
+   environment tab to use `readonly_user` instead of the default `app` user
+   that Render wires in automatically. The app connects as `readonly_user`;
+   Render's auto-generated connection string uses `app`.
+7. Once both services are live, update the live demo link at the top of this
    README.
 
 Render, Railway, and Fly.io are all reasonable choices here; Render was

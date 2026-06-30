@@ -3,10 +3,18 @@
 # Render choose "New > Blueprint" and point it at the repo.
 #
 # After the first deploy you still need to (Render can't do this part):
-#   1. Seed the database — run once against the new DATABASE_URL:
-#        psql "$DATABASE_URL" -f database/init/chinook.sql
+#   1. Seed the database — use database/seed.sql (not chinook.sql, which
+#      starts with DROP/CREATE DATABASE that Render's managed user can't run):
+#        psql "$DATABASE_URL" -f database/seed.sql
 #        psql "$DATABASE_URL" -f database/init/zz-read-only-sql-user.sql
-#   2. Set the OPENAI_API_KEY secret on the backend service (marked
+#      Note: zz-read-only-sql-user.sql contains "\c chinook" which may be
+#      brittle on managed Postgres. If it fails, create a
+#      database/render-readonly-user.sql without that line.
+#   2. After seeding, update the backend's DATABASE_URL to use readonly_user
+#      instead of the default 'app' user Render wires in automatically.
+#      Render's generated connection string points at 'app'; the app expects
+#      readonly_user. Override it in the backend service's environment tab.
+#   3. Set the OPENAI_API_KEY secret on the backend service (marked
 #      `sync: false` below, so Render will prompt for it instead of storing
 #      it in this file).
 
@@ -19,7 +27,7 @@ databases:
 services:
   - type: web
     name: chat-with-your-data-backend
-    env: python
+    runtime: python
     rootDir: backend
     plan: free
     buildCommand: pip install uv && uv sync --frozen
@@ -38,7 +46,7 @@ services:
 
   - type: web
     name: chat-with-your-data-frontend
-    env: static
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
