@@ -3,6 +3,7 @@ from typing import Any
 from openai import OpenAI
 
 from backend.config import get_settings
+from backend.metrics import TokenUsage, token_usage_from
 
 SYSTEM_PROMPT = """\
 You explain the result of a database query in plain language.
@@ -37,12 +38,13 @@ def generate_answer(
     sql: str,
     columns: list[str],
     rows: list[list[Any]],
-) -> str:
+    model: str | None = None,
+) -> tuple[str, TokenUsage]:
     settings = get_settings()
     client = OpenAI(api_key=settings.openai_api_key or None)
 
     response = client.responses.create(
-        model=settings.openai_model,
+        model=model or settings.openai_model,
         instructions=SYSTEM_PROMPT,
         input=[
             {
@@ -56,7 +58,7 @@ def generate_answer(
         ],
     )
 
-    return response.output_text.strip()
+    return response.output_text.strip(), token_usage_from(response)
 
 
 def main() -> None:
@@ -77,7 +79,7 @@ def main() -> None:
             ["U2", 10],
         ],
     )
-    print(answer)
+    print(answer[0])
 
 
 if __name__ == "__main__":

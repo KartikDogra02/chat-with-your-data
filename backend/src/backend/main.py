@@ -54,11 +54,12 @@ class QuestionRequest(BaseModel):
 class AnswerResponse(BaseModel):
     question: str
     answer: str
-    sql: str
+    sql: str | None
     columns: list[str]
     rows: list[list[Any]]
     attempts: int
     corrected: bool
+    refused: bool
 
 
 @app.post("/ask", response_model=AnswerResponse)
@@ -73,6 +74,7 @@ def ask(request: QuestionRequest) -> AnswerResponse:
         rows=answer["rows"],
         attempts=answer["attempts"],
         corrected=answer["corrected"],
+        refused=answer["refused"],
     )
 
 

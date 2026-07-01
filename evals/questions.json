@@ -5,9 +5,17 @@
     "question": "How many tracks are there?",
     "reference_sql": "SELECT COUNT(*) AS track_count FROM track;",
     "expected": {
-      "columns": ["track_count"],
-      "rows": [[3503]]
-    }
+      "columns": [
+        "track_count"
+      ],
+      "rows": [
+        [
+          3503
+        ]
+      ]
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "customer_count",
@@ -15,9 +23,17 @@
     "question": "How many customers are there?",
     "reference_sql": "SELECT COUNT(*) AS customer_count FROM customer;",
     "expected": {
-      "columns": ["customer_count"],
-      "rows": [[59]]
-    }
+      "columns": [
+        "customer_count"
+      ],
+      "rows": [
+        [
+          59
+        ]
+      ]
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "top_artists_by_album_count",
@@ -25,15 +41,35 @@
     "question": "Which five artists have the most albums?",
     "reference_sql": "SELECT ar.name AS artist_name, COUNT(al.album_id) AS album_count FROM artist ar JOIN album al ON al.artist_id = ar.artist_id GROUP BY ar.artist_id, ar.name ORDER BY album_count DESC, artist_name ASC LIMIT 5;",
     "expected": {
-      "columns": ["artist_name", "album_count"],
+      "columns": [
+        "artist_name",
+        "album_count"
+      ],
       "rows": [
-        ["Iron Maiden", 21],
-        ["Led Zeppelin", 14],
-        ["Deep Purple", 11],
-        ["Metallica", 10],
-        ["U2", 10]
+        [
+          "Iron Maiden",
+          21
+        ],
+        [
+          "Led Zeppelin",
+          14
+        ],
+        [
+          "Deep Purple",
+          11
+        ],
+        [
+          "Metallica",
+          10
+        ],
+        [
+          "U2",
+          10
+        ]
       ]
-    }
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "top_customers_by_spend",
@@ -41,15 +77,35 @@
     "question": "Which five customers have spent the most?",
     "reference_sql": "SELECT c.first_name || ' ' || c.last_name AS customer_name, SUM(i.total) AS total_spend FROM customer c JOIN invoice i ON i.customer_id = c.customer_id GROUP BY c.customer_id, c.first_name, c.last_name ORDER BY total_spend DESC, customer_name ASC LIMIT 5;",
     "expected": {
-      "columns": ["customer_name", "total_spend"],
+      "columns": [
+        "customer_name",
+        "total_spend"
+      ],
       "rows": [
-        ["Helena Holý", 49.62],
-        ["Richard Cunningham", 47.62],
-        ["Luis Rojas", 46.62],
-        ["Hugh O'Reilly", 45.62],
-        ["Ladislav Kovács", 45.62]
+        [
+          "Helena Holý",
+          49.62
+        ],
+        [
+          "Richard Cunningham",
+          47.62
+        ],
+        [
+          "Luis Rojas",
+          46.62
+        ],
+        [
+          "Hugh O'Reilly",
+          45.62
+        ],
+        [
+          "Ladislav Kovács",
+          45.62
+        ]
       ]
-    }
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "top_country_by_revenue",
@@ -57,9 +113,19 @@
     "question": "Which country generated the most revenue?",
     "reference_sql": "SELECT billing_country AS country, SUM(total) AS total_revenue FROM invoice GROUP BY billing_country ORDER BY total_revenue DESC, country ASC LIMIT 1;",
     "expected": {
-      "columns": ["country", "total_revenue"],
-      "rows": [["USA", 523.06]]
-    }
+      "columns": [
+        "country",
+        "total_revenue"
+      ],
+      "rows": [
+        [
+          "USA",
+          523.06
+        ]
+      ]
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "top_genre_by_tracks_sold",
@@ -67,9 +133,19 @@
     "question": "Which genre has sold the most tracks?",
     "reference_sql": "SELECT g.name AS genre_name, SUM(il.quantity) AS tracks_sold FROM genre g JOIN track t ON t.genre_id = g.genre_id JOIN invoice_line il ON il.track_id = t.track_id GROUP BY g.genre_id, g.name ORDER BY tracks_sold DESC, genre_name ASC LIMIT 1;",
     "expected": {
-      "columns": ["genre_name", "tracks_sold"],
-      "rows": [["Rock", 835]]
-    }
+      "columns": [
+        "genre_name",
+        "tracks_sold"
+      ],
+      "rows": [
+        [
+          "Rock",
+          835
+        ]
+      ]
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "revenue_by_year",
@@ -77,15 +153,35 @@
     "question": "What was the total revenue by year?",
     "reference_sql": "SELECT EXTRACT(YEAR FROM invoice_date)::integer AS year, SUM(total) AS total_revenue FROM invoice GROUP BY year ORDER BY year;",
     "expected": {
-      "columns": ["year", "total_revenue"],
+      "columns": [
+        "year",
+        "total_revenue"
+      ],
       "rows": [
-        [2021, 449.46],
-        [2022, 481.45],
-        [2023, 469.58],
-        [2024, 477.53],
-        [2025, 450.58]
+        [
+          2021,
+          449.46
+        ],
+        [
+          2022,
+          481.45
+        ],
+        [
+          2023,
+          469.58
+        ],
+        [
+          2024,
+          477.53
+        ],
+        [
+          2025,
+          450.58
+        ]
       ]
-    }
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "employee_with_most_customers",
@@ -93,9 +189,19 @@
     "question": "Which employee supports the most customers?",
     "reference_sql": "SELECT e.first_name || ' ' || e.last_name AS employee_name, COUNT(c.customer_id) AS customer_count FROM employee e JOIN customer c ON c.support_rep_id = e.employee_id GROUP BY e.employee_id, e.first_name, e.last_name ORDER BY customer_count DESC, employee_name ASC LIMIT 1;",
     "expected": {
-      "columns": ["employee_name", "customer_count"],
-      "rows": [["Jane Peacock", 21]]
-    }
+      "columns": [
+        "employee_name",
+        "customer_count"
+      ],
+      "rows": [
+        [
+          "Jane Peacock",
+          21
+        ]
+      ]
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "longest_track_and_artist",
@@ -103,9 +209,21 @@
     "question": "What is the longest track and who is its artist?",
     "reference_sql": "SELECT t.name AS track_name, ar.name AS artist_name, t.milliseconds FROM track t JOIN album al ON al.album_id = t.album_id JOIN artist ar ON ar.artist_id = al.artist_id ORDER BY t.milliseconds DESC, t.track_id ASC LIMIT 1;",
     "expected": {
-      "columns": ["track_name", "artist_name", "milliseconds"],
-      "rows": [["Occupation / Precipice", "Battlestar Galactica", 5286953]]
-    }
+      "columns": [
+        "track_name",
+        "artist_name",
+        "milliseconds"
+      ],
+      "rows": [
+        [
+          "Occupation / Precipice",
+          "Battlestar Galactica",
+          5286953
+        ]
+      ]
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
   },
   {
     "id": "top_artists_by_sales",
@@ -113,14 +231,76 @@
     "question": "Which five artists generated the most sales?",
     "reference_sql": "SELECT ar.name AS artist_name, SUM(il.unit_price * il.quantity) AS total_sales FROM artist ar JOIN album al ON al.artist_id = ar.artist_id JOIN track t ON t.album_id = al.album_id JOIN invoice_line il ON il.track_id = t.track_id GROUP BY ar.artist_id, ar.name ORDER BY total_sales DESC, artist_name ASC LIMIT 5;",
     "expected": {
-      "columns": ["artist_name", "total_sales"],
+      "columns": [
+        "artist_name",
+        "total_sales"
+      ],
       "rows": [
-        ["Iron Maiden", 138.60],
-        ["U2", 105.93],
-        ["Metallica", 90.09],
-        ["Led Zeppelin", 86.13],
-        ["Lost", 81.59]
+        [
+          "Iron Maiden",
+          138.6
+        ],
+        [
+          "U2",
+          105.93
+        ],
+        [
+          "Metallica",
+          90.09
+        ],
+        [
+          "Led Zeppelin",
+          86.13
+        ],
+        [
+          "Lost",
+          81.59
+        ]
       ]
-    }
+    },
+    "category": "should_pass",
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "refund_rate",
+    "category": "should_fail",
+    "question": "What was the refund rate last month?",
+    "expected_behavior": "cannot_answer"
+  },
+  {
+    "id": "customer_churn",
+    "category": "should_fail",
+    "question": "Which customers churned?",
+    "expected_behavior": "cannot_answer"
+  },
+  {
+    "id": "profit_margin_by_artist",
+    "category": "should_fail",
+    "question": "What is the profit margin by artist?",
+    "expected_behavior": "cannot_answer"
+  },
+  {
+    "id": "signups_yesterday",
+    "category": "should_fail",
+    "question": "How many users signed up yesterday?",
+    "expected_behavior": "cannot_answer"
+  },
+  {
+    "id": "quota_exceeded",
+    "category": "should_fail",
+    "question": "Which employees exceeded their sales quota?",
+    "expected_behavior": "cannot_answer"
+  },
+  {
+    "id": "best_customers",
+    "category": "ambiguous",
+    "question": "Who are the best customers?",
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "most_popular_music",
+    "category": "ambiguous",
+    "question": "What is the most popular music?",
+    "expected_behavior": "answer"
   }
 ]
