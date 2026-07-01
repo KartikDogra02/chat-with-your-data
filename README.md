@@ -147,11 +147,27 @@ request ID, model, latency, token usage, estimated cost, `schema_hash`, and the
 refusal/correction flags — plus an `error_type` line on failures. Raw questions
 are not logged: only a short preview (first 120 chars) and a SHA-256 hash are
 kept, enough to correlate and debug without retaining user text wholesale.
+Latency, token usage, and cost are request-level totals across all model calls
+made while answering the question (SQL generation, optional SQL correction, and
+plain-English answer generation).
 
 ```json
 {"event": "question_answered", "request_id": "5e5e63f7c9f2", "model": "gpt-4.1-mini",
  "schema_hash": "91385299c9ea", "refused": false, "attempts": 1, "corrected": false,
- "latency_ms": 3966.0, "input_tokens": 1411, "output_tokens": 34, "cost_usd": 0.0006188}
+ "latency_ms": 3966.0, "input_tokens": 1411, "output_tokens": 34, "cost_usd": 0.0006188,
+ "question_preview": "Which five artists generated the most sales?",
+ "question_hash": "0c174f5972d0f5fdca1d0e97b9ec4b071b60eb6723aa62f8d81627e27d6c0d7e"}
+```
+
+Failure logs use the same request ID/fingerprint shape and include the
+exception class. They currently do not include partial latency/token totals,
+because errors are handled at the FastAPI boundary after the pipeline raises.
+
+```json
+{"event": "question_failed", "request_id": "a31f2e9208dd",
+ "error_type": "QueryExecutionError",
+ "question_preview": "Which customers churned last month?",
+ "question_hash": "db8f2f3a43d72ec2d6bff2d21c7c60fb43f9d9fb0225ce1d9a188ad1d08e1a35"}
 ```
 
 `schema_hash` is a 12-char fingerprint of the exact schema text sent to the
