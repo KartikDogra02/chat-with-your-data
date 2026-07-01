@@ -47,32 +47,27 @@ First time setup (dependency install, `.env` files) is covered in
 
 ## Deployment
 
-The included [`render.yaml`](render.yaml) is a [Render Blueprint](https://render.com/docs/blueprint-spec)
-that provisions all three pieces in one go: a managed Postgres database, the
-FastAPI backend as a web service, and the Vue app as a static site.
+The app is deployed on Render:
 
-1. Push this repo to GitHub.
-2. In Render: **New > Blueprint**, point it at the repo.
-3. Render reads `render.yaml` and creates the database + both services.
-4. Set the `OPENAI_API_KEY` secret on the backend service when prompted (it's
-   intentionally left out of `render.yaml`).
-5. Seed the database using `database/seed.sql` (not `chinook.sql` — that
-   file starts with `DROP DATABASE / CREATE DATABASE / \c chinook` which
-   Render's managed Postgres user cannot run):
-   ```bash
-   psql "$DATABASE_URL" -f database/seed.sql
-   psql "$DATABASE_URL" -f database/init/zz-read-only-sql-user.sql
-   ```
-6. After seeding, override the backend's `DATABASE_URL` in Render's
-   environment tab to use `readonly_user` instead of the default `app` user
-   that Render wires in automatically. The app connects as `readonly_user`;
-   Render's auto-generated connection string uses `app`.
-7. Once both services are live, update the live demo link at the top of this
-   README.
+- **Frontend:** <https://chat-with-your-data-frontend.onrender.com>
+- **Backend API:** <https://chat-with-your-data-backend.onrender.com>
+- **Backend docs:** <https://chat-with-your-data-backend.onrender.com/docs>
+- **Database:** Render managed PostgreSQL seeded with the Chinook dataset
 
-Render, Railway, and Fly.io are all reasonable choices here; Render was
-picked because one Blueprint file can describe the database, backend, and
-frontend together instead of three separate dashboards.
+Deployment is described by [`render.yaml`](render.yaml), a Render Blueprint
+that provisions the managed Postgres database, the FastAPI backend, and the
+Vue static frontend together.
+
+The production setup uses:
+
+- `OPENAI_API_KEY` as a backend secret
+- `CORS_ORIGINS` so the deployed frontend can call the backend
+- `VITE_API_BASE_URL` so the deployed frontend points at the deployed API
+- `database/seed.sql` for managed Postgres seeding
+
+`database/seed.sql` exists because the original local Docker script,
+`database/init/chinook.sql`, starts with `DROP DATABASE`, `CREATE DATABASE`,
+and `\c chinook`, which managed Postgres users generally cannot run.
 
 ## How it works
 
