@@ -18,7 +18,7 @@ npm install
 
 ## Start the backend first
 
-The dev server proxies `/ask` and `/health` to the backend at
+The dev server proxies `/ask` and `/ping` to the backend at
 `http://127.0.0.1:8000` (see `vite.config.js`), so the backend needs to be
 running before you ask a question.
 

@@ -1,6 +1,7 @@
 # Chat With Your Data
 
-Live demo: https://chat-with-your-data-frontend.onrender.com
+Live demo: https://chat-with-your-data-frontend.onrender.com  
+GitHub repo: https://github.com/KartikDogra02/chat-with-your-data
 
 Ask a plain-English question about a database and get back a grounded answer,
 the SQL that produced it, and a chart when the result is chartable. Built on
@@ -13,6 +14,16 @@ dataset.
 ## Screenshot
 
 ![App demo](docs/screenshots/app-demo.png)
+
+## Try it
+
+Example questions:
+
+- How many tracks are there?
+- Which five artists generated the most sales?
+- Which country generated the most revenue?
+- What was the total revenue by year?
+- Which genre sold the most tracks?
 
 ## Stack
 
@@ -45,7 +56,7 @@ First time setup (dependency install, `.env` files) is covered in
 [`backend/README.md`](backend/README.md) and
 [`frontend/README.md`](frontend/README.md).
 
-## Deployment
+## Live deployment
 
 The app is deployed on Render:
 

@@ -47,7 +47,7 @@ uv run uvicorn backend.main:app --reload
 
 The API will be available at:
 
-- Health check: <http://127.0.0.1:8000/health>
+- Ping check: <http://127.0.0.1:8000/ping>
 - Interactive API documentation: <http://127.0.0.1:8000/docs>
 
 Stop the server with `Ctrl+C`.

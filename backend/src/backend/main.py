@@ -26,9 +26,14 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
+@app.get("/")
+def root() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/ping")
+def ping() -> dict[str, str]:
+    return {"ping": "pong"}
 
 
 def main() -> None:
