@@ -140,6 +140,23 @@ without ever touching the database (`refused: true` in the response). This is
 what stops the model from hallucinating a plausible-looking query against
 columns that don't exist. The eval set below measures how well it holds.
 
+## Observability
+
+The backend emits one structured JSON log line per `/ask` request with a
+request ID, model, latency, token usage, estimated cost, `schema_hash`, and the
+refusal/correction flags — plus an `error_type` line on failures. Raw questions
+are not logged: only a short preview (first 120 chars) and a SHA-256 hash are
+kept, enough to correlate and debug without retaining user text wholesale.
+
+```json
+{"event": "question_answered", "request_id": "5e5e63f7c9f2", "model": "gpt-4.1-mini",
+ "schema_hash": "91385299c9ea", "refused": false, "attempts": 1, "corrected": false,
+ "latency_ms": 3966.0, "input_tokens": 1411, "output_tokens": 34, "cost_usd": 0.0006188}
+```
+
+`schema_hash` is a 12-char fingerprint of the exact schema text sent to the
+model, so a request can be tied back to the prompt context it ran against.
+
 ## Evals
 
 ### Methodology

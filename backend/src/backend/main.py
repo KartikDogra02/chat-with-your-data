@@ -1,5 +1,8 @@
+import hashlib
+import json
 import logging
 from typing import Any
+from uuid import uuid4
 
 import openai
 import psycopg
@@ -15,6 +18,26 @@ from backend.sql_generator import SQLGenerationError
 from backend.sql_validator import UnsafeSQLError
 
 logger = logging.getLogger(__name__)
+
+# One JSON object per request on its own line, so a log aggregator can parse it.
+# Given its own handler + propagate=False so it emits under uvicorn or pytest
+# without depending on the root logging config.
+request_logger = logging.getLogger("backend.requests")
+if not request_logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(message)s"))
+    request_logger.addHandler(_handler)
+    request_logger.setLevel(logging.INFO)
+    request_logger.propagate = False
+
+
+def _question_fingerprint(question: str) -> dict[str, str]:
+    # We don't log the raw question. A short preview plus a full hash is enough
+    # to correlate and eyeball logs without retaining user text wholesale.
+    return {
+        "question_preview": question[:120],
+        "question_hash": hashlib.sha256(question.encode()).hexdigest(),
+    }
 
 app = FastAPI(title="Chat With Your Data")
 
@@ -64,7 +87,43 @@ class AnswerResponse(BaseModel):
 
 @app.post("/ask", response_model=AnswerResponse)
 def ask(request: QuestionRequest) -> AnswerResponse:
-    answer = answer_question(request.question)
+    request_id = uuid4().hex[:12]
+    fingerprint = _question_fingerprint(request.question)
+
+    try:
+        answer = answer_question(request.question)
+    except Exception as error:
+        request_logger.info(
+            json.dumps(
+                {
+                    "event": "question_failed",
+                    "request_id": request_id,
+                    "error_type": type(error).__name__,
+                    **fingerprint,
+                }
+            )
+        )
+        raise
+
+    metrics = answer["metrics"]
+    request_logger.info(
+        json.dumps(
+            {
+                "event": "question_answered",
+                "request_id": request_id,
+                "model": metrics["model"],
+                "schema_hash": metrics["schema_hash"],
+                "refused": answer["refused"],
+                "attempts": answer["attempts"],
+                "corrected": answer["corrected"],
+                "latency_ms": metrics["timings_ms"]["total"],
+                "input_tokens": metrics["input_tokens"],
+                "output_tokens": metrics["output_tokens"],
+                "cost_usd": metrics["cost_usd"],
+                **fingerprint,
+            }
+        )
+    )
 
     return AnswerResponse(
         question=answer["question"],
