@@ -1,3 +1,4 @@
+import hashlib
 import sys
 import time
 
@@ -16,12 +17,20 @@ def _ms(start: float) -> float:
     return round((time.perf_counter() - start) * 1000, 1)
 
 
+def _schema_hash(schema: str) -> str:
+    # A short fingerprint of the exact schema text sent to the model. Lets logs
+    # tie a request to the prompt context it ran against, so a change in schema
+    # (or how we format it) is visible without logging the whole thing.
+    return hashlib.sha256(schema.encode()).hexdigest()[:12]
+
+
 def _metrics(
-    model: str, usage: TokenUsage, timings_ms: dict[str, float]
+    model: str, usage: TokenUsage, timings_ms: dict[str, float], schema_hash: str
 ) -> dict:
     timings_ms["total"] = round(sum(timings_ms.values()), 1)
     return {
         "model": model,
+        "schema_hash": schema_hash,
         "input_tokens": usage.input_tokens,
         "output_tokens": usage.output_tokens,
         "cost_usd": cost_usd(model, usage.input_tokens, usage.output_tokens),
@@ -36,6 +45,7 @@ def answer_question(question: str, model: str | None = None):
     start = time.perf_counter()
     schema = format_schema(get_schema())
     t_schema = _ms(start)
+    schema_hash = _schema_hash(schema)
 
     start = time.perf_counter()
     decision, u = generate_sql(question=question, schema=schema, model=model)
@@ -58,6 +68,7 @@ def answer_question(question: str, model: str | None = None):
                 model,
                 usage,
                 {"schema": t_schema, "generate_sql": t_generate},
+                schema_hash,
             ),
         }
 
@@ -128,6 +139,7 @@ def answer_question(question: str, model: str | None = None):
                 "fix_sql": t_fix,
                 "answer": t_answer,
             },
+            schema_hash,
         ),
     }
 
