@@ -1,0 +1,59 @@
+# Render Blueprint: provisions the Postgres database, the FastAPI backend,
+# and the Vue static frontend in one go. Push this repo to GitHub, then in
+# Render choose "New > Blueprint" and point it at the repo.
+#
+# After the first deploy you still need to (Render can't do this part):
+#   1. Seed the database — use database/seed.sql (not chinook.sql, which
+#      starts with DROP/CREATE DATABASE that Render's managed user can't run):
+#        psql "$DATABASE_URL" -f database/seed.sql
+#        psql "$DATABASE_URL" -f database/init/zz-read-only-sql-user.sql
+#      Note: zz-read-only-sql-user.sql contains "\c chinook" which may be
+#      brittle on managed Postgres. If it fails, create a
+#      database/render-readonly-user.sql without that line.
+#   2. After seeding, update the backend's DATABASE_URL to use readonly_user
+#      instead of the default 'app' user Render wires in automatically.
+#      Render's generated connection string points at 'app'; the app expects
+#      readonly_user. Override it in the backend service's environment tab.
+#   3. Set the OPENAI_API_KEY secret on the backend service (marked
+#      `sync: false` below, so Render will prompt for it instead of storing
+#      it in this file).
+
+databases:
+  - name: chat-with-your-data-db
+    databaseName: chinook
+    user: app
+    plan: free
+
+services:
+  - type: web
+    name: chat-with-your-data-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install uv && uv sync --frozen
+    startCommand: uv run uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: chat-with-your-data-db
+          property: connectionString
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: CORS_ORIGINS
+        value: https://chat-with-your-data-frontend.onrender.com
+
+  - type: web
+    name: chat-with-your-data-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://chat-with-your-data-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
