@@ -83,8 +83,10 @@ and `\c chinook`, which managed Postgres users generally cannot run.
 ## How it works
 
 1. The backend fetches the live database schema and sends it, plus the
-   question, to the LLM with a structured-output schema (`{"sql": "..."}`).
-2. The returned SQL is validated, executed against a read-only Postgres
+   question, to the LLM with a structured-output schema
+   (`{can_answer, sql, reason}`). If `can_answer` is false it returns the
+   reason and stops — no database access.
+2. Otherwise the SQL is validated, executed against a read-only Postgres
    connection, and the resulting rows are fed back to the LLM to produce a
    plain-English answer.
 3. The frontend renders the answer, a bar chart (when the result is exactly
@@ -128,24 +130,89 @@ model to "fix" with another guess.
 The `/ask` response includes `attempts` and `corrected` so you can see when
 this kicked in.
 
+## Refusing impossible questions
+
+The model returns a structured decision, not just SQL: `{can_answer, sql,
+reason}`. If a question asks for data the Chinook schema doesn't have —
+refunds, churn, signups, sales quotas, profit margin — it sets
+`can_answer: false` with a one-sentence reason, and the pipeline returns that
+without ever touching the database (`refused: true` in the response). This is
+what stops the model from hallucinating a plausible-looking query against
+columns that don't exist. The eval set below measures how well it holds.
+
 ## Evals
 
-[`evals/questions.json`](evals/questions.json) has 10 real questions across
-easy/medium/hard difficulty, each with an expected result. Run them with:
+### Methodology
+
+[`evals/questions.json`](evals/questions.json) has 17 questions in three
+categories:
+
+- **`should_pass` (10)** — answerable questions with an exact expected result.
+  These pass on a strict row-by-row comparison (numbers compared with a small
+  float tolerance for Postgres `Decimal` aggregates).
+- **`should_fail` (5)** — questions the Chinook schema *can't* answer (refund
+  rate, churn, signups, sales quota, profit margin). These pass only if the
+  system refuses (`refused: true`) instead of inventing SQL.
+- **`ambiguous` (2)** — answerable but under-specified ("who are the best
+  customers?"). These pass if the system produces *an* answer at all.
+
+Run them (needs a seeded DB and `OPENAI_API_KEY`):
 
 ```bash
 cd backend
-uv run python -m backend.eval_runner
+uv run python -m backend.eval_runner --model gpt-4.1-mini          # exact-row + refusal
+uv run python -m backend.eval_runner --model gpt-4o-mini --judge   # + prose judge
 ```
 
-Latest run: **10/10 passed** against `gpt-4.1-mini`. Since the model's output
-isn't deterministic, treat this as a snapshot rather than a guarantee — rerun
-it after prompt changes.
+The runner reports per-question latency, token usage, and estimated cost, plus
+aggregate p50/p95 latency and average cost. With `--judge` it adds a second,
+independent signal: an LLM-as-judge ([`judge.py`](backend/src/backend/judge.py))
+reads the returned rows and the prose answer and decides whether the answer
+faithfully reflects the data. Exact-row match asks "did the SQL return the
+right data"; the judge asks "did the sentence describe it honestly" — they can
+disagree, which is the point.
+
+### Model comparison
+
+Same 17 questions, snapshot on `2026-07` (models are non-deterministic — treat
+as a snapshot, not a guarantee):
+
+| Model | should_pass | should_fail | ambiguous | Prose judge | p50 latency | p95 latency | Avg cost/query |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `gpt-4.1-mini` | 10/10 | 5/5 | 1/2 | 9/11 | 3.7s | 14.1s | ~$0.00076 |
+| `gpt-4o-mini`  | 9/10  | 5/5 | 1/2 | 7/11 | 3.3s | 5.7s  | ~$0.00030 |
+
+The tradeoff: `gpt-4o-mini` is ~2.5× cheaper and tighter on tail latency, but
+it dropped to 9/10 on exact-row accuracy and its prose was judged faithful less
+often. Both models refuse impossible questions perfectly (5/5) — the guardrail
+doesn't depend on the bigger model. `gpt-4.1-mini` is the default; `gpt-4o-mini`
+is a reasonable cost-down if the occasional wrong column is acceptable.
+
+(Costs use OpenAI's published per-token prices — see
+[`pricing.py`](backend/src/backend/pricing.py) — and are estimates, not billing.)
+
+### Known failure cases
+
+- **Ambiguous questions skew toward refusal.** Both models refused "Who are the
+  best customers?" (best by spend? by invoice count?) rather than pick an
+  interpretation. That's the refusal prompt erring on the cautious side;
+  loosening it would risk hallucinating on genuinely impossible questions, so
+  1/2 here is a deliberate tension, not a pure bug.
+- **`gpt-4o-mini` dropped a column.** On "what is the longest track and who is
+  its artist?" it returned track + artist but omitted the `milliseconds` value.
+  Exact-row match caught it; the prose judge *passed* it — exactly the kind of
+  disagreement that justifies keeping both signals.
+- **Judge is stricter than row-match.** Even with correct rows, the judge
+  sometimes fails answers that summarize a ranking ("top 5 … followed by …")
+  without restating every figure. It's a rough signal, not ground truth.
+- **Small-n latency is noisy.** p95 over 17 questions is dominated by a single
+  outlier (one `gpt-4.1-mini` call took ~13s), which is why its p95 looks far
+  worse than `gpt-4o-mini`'s despite similar medians.
 
 ## Limitations
 
-- Single-table-question style works well; deeply ambiguous or multi-step
-  questions ("compare this quarter to last, excluding refunds") aren't tested.
+- Multi-step questions ("compare this quarter to last, excluding refunds")
+  aren't handled; ambiguous ones are tested but currently lean toward refusal.
 - No conversation memory — every question is independent, so follow-ups like
   "now break that down by month" don't have context from the previous answer.
 - The chart logic is a simple frontend heuristic (exactly 2 columns, second
@@ -161,5 +228,7 @@ it after prompt changes.
 - Schema retrieval (RAG) so a much larger schema doesn't have to be sent in
   full on every request.
 - Let the model choose the chart type instead of a fixed frontend rule.
-- A second eval pass that checks the *prose* answer's correctness, not just
-  the underlying rows.
+- Tune the refusal/ambiguity boundary so genuinely answerable-but-vague
+  questions get a reasonable default instead of a refusal.
+- Grow the eval set and wire the manual `evals.yml` workflow into a
+  pre-release gate once the cost/secret story is worked out.
