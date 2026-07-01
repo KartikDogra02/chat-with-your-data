@@ -1,6 +1,6 @@
 # Chat With Your Data
 
-Live demo: _not deployed yet — see [Deployment](#deployment)_
+Live demo: https://chat-with-your-data-frontend.onrender.com
 
 Ask a plain-English question about a database and get back a grounded answer,
 the SQL that produced it, and a chart when the result is chartable. Built on

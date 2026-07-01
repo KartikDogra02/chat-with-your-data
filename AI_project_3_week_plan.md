@@ -120,16 +120,15 @@ done well.
   candidate measures their AI's accuracy, and it gives you a number to talk about.
 - [ ] **Day 2 — Tidy the UI.** Loading states, error messages, a sensible layout. It doesn't
   need to be beautiful, just not broken-looking.
-- [ ] **Day 3 — Dockerise + deploy.** Containerise the stack, push to Render/Railway/Fly. Get
+- [x] **Day 3 — Dockerise + deploy.** Containerise the stack, push to Render/Railway/Fly. Get
   a public URL. Seed it with the sample data so anyone can try it immediately.
-  - Prep done: `render.yaml` blueprint provisions the DB + backend + frontend on Render.
-    Still needs an actual Render account/deploy to get the public URL.
+  - Done: deployed on Render with managed Postgres, FastAPI backend, and Vue frontend.
+    Database seeded with the Chinook dataset.
 - [x] **Day 4 — README (this matters as much as the code).** What it is, a demo GIF, how it
   works (a small architecture diagram), the stack, your eval results, and an honest
   "limitations / what I'd do next" section. Link the live demo at the top.
   - Done: root `README.md` covers what it is, how it works, safety guardrails, the
-    self-correction loop, eval results, limitations, and what's next. Live demo link is a
-    placeholder until Day 3's actual deploy happens.
+    self-correction loop, eval results, limitations, what's next, and the live demo link.
 - [ ] **Day 5 — Hook it into your search.** Add the repo + live link to your GitHub profile
   and your CV, and replace the `[TO BUILD]` placeholder with the real details.
 
