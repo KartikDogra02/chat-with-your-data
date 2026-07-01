@@ -2,12 +2,22 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from backend.config import get_settings
+from backend.metrics import TokenUsage, token_usage_from
 from backend.schema import format_schema, get_schema
 
 SYSTEM_PROMPT = """\
-You translate natural-language questions into a single PostgreSQL query.
+You decide whether a question can be answered from the given PostgreSQL schema,
+and if so you translate it into a single query.
 
-Rules:
+First decide can_answer:
+- If the question asks for data that does not exist in the schema — refunds,
+  returns, customer churn, signups, sales quotas, profit or margin, cost of
+  goods, discounts, or anything with no supporting table or column — set
+  can_answer to false and give a one-sentence reason naming what's missing.
+  Leave sql null. Do NOT invent tables or columns to force an answer.
+- Otherwise set can_answer to true, leave reason null, and produce the query.
+
+Rules for the query (when can_answer is true):
 - Produce exactly one SQL statement that answers the question.
 - The query MUST be read-only: a single SELECT.
 - Never emit INSERT, UPDATE, DELETE, DROP, ALTER, CREATE, or any other write operation.
@@ -40,7 +50,21 @@ class SQLGenerationError(RuntimeError):
 
 
 class SQLResponse(BaseModel):
-    sql: str = Field(description="The read-only PostgreSQL SELECT query.")
+    can_answer: bool = Field(
+        description="True if the question can be answered from the schema."
+    )
+    sql: str | None = Field(
+        default=None,
+        description="The read-only PostgreSQL SELECT query, when can_answer is true.",
+    )
+    reason: str | None = Field(
+        default=None,
+        description="One sentence explaining the refusal, when can_answer is false.",
+    )
+
+
+class FixResponse(BaseModel):
+    sql: str = Field(description="The corrected read-only PostgreSQL SELECT query.")
 
 
 FIX_SYSTEM_PROMPT = """\
@@ -59,12 +83,14 @@ Rules:
 """
 
 
-def generate_sql(question: str, schema: str) -> str:
+def generate_sql(
+    question: str, schema: str, model: str | None = None
+) -> tuple[SQLResponse, TokenUsage]:
     settings = get_settings()
     client = OpenAI(api_key=settings.openai_api_key or None)
 
     response = client.responses.parse(
-        model=settings.openai_model,
+        model=model or settings.openai_model,
         instructions=SYSTEM_PROMPT,
         input=[
             {
@@ -78,10 +104,16 @@ def generate_sql(question: str, schema: str) -> str:
     if response.output_parsed is None:
         raise SQLGenerationError("The model did not return a structured SQL response.")
 
-    return response.output_parsed.sql
+    return response.output_parsed, token_usage_from(response)
 
 
-def fix_sql(question: str, schema: str, bad_sql: str, error_message: str) -> str:
+def fix_sql(
+    question: str,
+    schema: str,
+    bad_sql: str,
+    error_message: str,
+    model: str | None = None,
+) -> tuple[str, TokenUsage]:
     settings = get_settings()
     client = OpenAI(api_key=settings.openai_api_key or None)
 
@@ -95,22 +127,23 @@ def fix_sql(question: str, schema: str, bad_sql: str, error_message: str) -> str
     )
 
     response = client.responses.parse(
-        model=settings.openai_model,
+        model=model or settings.openai_model,
         instructions=FIX_SYSTEM_PROMPT,
         input=[{"role": "user", "content": content}],
-        text_format=SQLResponse,
+        text_format=FixResponse,
     )
 
     if response.output_parsed is None:
         raise SQLGenerationError("The model did not return a structured SQL response.")
 
-    return response.output_parsed.sql
+    return response.output_parsed.sql, token_usage_from(response)
 
 
 def main() -> None:
     schema = format_schema(get_schema())
     question = "Which five artists have the most albums?"
-    print(generate_sql(question, schema))
+    decision, _ = generate_sql(question, schema)
+    print(decision.sql if decision.can_answer else f"(cannot answer: {decision.reason})")
 
 
 if __name__ == "__main__":

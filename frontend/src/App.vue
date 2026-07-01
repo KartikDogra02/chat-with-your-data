@@ -150,7 +150,7 @@ function askExample(example) {
         <p class="answer">{{ result.answer }}</p>
       </div>
 
-      <div class="block">
+      <div v-if="!result.refused" class="block">
         <h2>Results</h2>
         <div v-if="chartData" class="chart-wrap">
           <Bar :data="chartData" :options="chartOptions" />
@@ -172,7 +172,7 @@ function askExample(example) {
         <p v-else class="empty">No rows returned.</p>
       </div>
 
-      <div class="block">
+      <div v-if="result.sql" class="block">
         <details>
           <summary>Generated SQL</summary>
           <pre><code>{{ result.sql }}</code></pre>

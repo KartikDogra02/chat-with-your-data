@@ -1,0 +1,59 @@
+name: Evals
+
+# Manual only. LLM evals cost money and need the OPENAI_API_KEY secret, so they
+# never run on push — trigger them from the Actions tab when you want a number.
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Model to run evals against"
+        default: "gpt-4.1-mini"
+      judge:
+        description: "Also run the prose LLM judge"
+        type: boolean
+        default: false
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: chinook
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d chinook"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Postgres client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Seed the database
+        env:
+          PGPASSWORD: app
+        run: |
+          psql "postgresql://app:app@localhost:5432/chinook" -f ../database/seed.sql
+          psql "postgresql://app:app@localhost:5432/chinook" -f ../database/init/zz-read-only-sql-user.sql
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+
+      - name: Run evals
+        env:
+          DATABASE_URL: postgresql://readonly_user:readonly_password@localhost:5432/chinook
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          FLAGS=""
+          if [ "${{ inputs.judge }}" = "true" ]; then FLAGS="--judge"; fi
+          uv run python -m backend.eval_runner --model "${{ inputs.model }}" $FLAGS
